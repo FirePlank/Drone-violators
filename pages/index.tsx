@@ -2,8 +2,17 @@ import type { NextPage } from 'next'
 import Head from 'next/head'
 import { useEffect, useState } from 'react';
 
+interface Violator {
+  serialNumber: String,
+  name: String,
+  email: String,
+  phone: String,
+  lastSeen: number,
+  distance: number
+}
+
 const Home: NextPage = () => {
-  const [violators, setViolators] = useState([]);
+  const [violators, setViolators] = useState<Violator[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
