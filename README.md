@@ -5,17 +5,15 @@ This web application is an assignment project for a job application that is mean
 ## Installation and usage
 
 1. Clone the repository:
-<br/>
 `git clone https://github.com/FirePlank/Drone-violators.git`
 
 2. Install the dependencies:
-<br/>
-`cd Drone-violators`
-<br/>
-`npm install`
+
+&emsp;&emsp;`cd Drone-violators`
+
+&emsp;&emsp;`npm install`
 
 3. Run the development server:
-<br/>
 `npm run dev`
 
 
