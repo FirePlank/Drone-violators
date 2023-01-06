@@ -3,10 +3,10 @@ import Head from 'next/head'
 import { useEffect, useState } from 'react';
 
 interface Violator {
-  serialNumber: String,
-  name: String,
-  email: String,
-  phone: String,
+  serialNumber: string,
+  name: string,
+  email: string,
+  phone: string,
   lastSeen: number,
   distance: number
 }
@@ -21,8 +21,8 @@ const Home: NextPage = () => {
       // add new violators
       setViolators((violators) => {
         // check if violator is already in the list and if so update the last seen time and distance from nest if its lower
-        const newViolators = data.filter((violator: { serialNumber: String, lastSeen: number, distance: number }) => {
-          const existingViolator = violators.find((v: { serialNumber: String }) => v.serialNumber === violator.serialNumber);
+        const newViolators = data.filter((violator: { serialNumber: string, lastSeen: number, distance: number }) => {
+          const existingViolator = violators.find((v: { serialNumber: string }) => v.serialNumber === violator.serialNumber);
           if (existingViolator) {
             existingViolator.lastSeen = violator.lastSeen;
             // if the distance is lower than the existing one, update it
