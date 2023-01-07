@@ -1,5 +1,25 @@
 import { XMLParser } from 'fast-xml-parser';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import fs from 'fs';
+
+const saveViolators = (violators: any) => {
+  // update the file isntead of overwriting but remove old duplicates
+  const data = fs.readFileSync('/tmp/violators.json', 'utf8');
+  const json = JSON.parse(data);
+  // if duplicate exists, replace it with new data
+  for (let i = 0; i < json.length; i++) {
+    for (let j = 0; j < violators.length; j++) {
+      if (json[i].serialNumber === violators[j].serialNumber) {
+        json[i] = violators[j];
+        break;
+      }
+    }
+  }
+  // add new data to the file
+  json.push(...violators);
+  // write to file
+  fs.writeFileSync('violators.json', JSON.stringify(json));
+};
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const ndzRadius = 100;
@@ -21,19 +41,22 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       const serialNumber = drone.serialNumber;
       const positionX = parseFloat(drone.positionX) / 1000;
       const positionY = parseFloat(drone.positionY) / 1000;
-      // Calculate the distance of the drone from the nest
-      const distance = Math.sqrt(positionX ** 2 + positionY ** 2);
-
+      // distance formula
+      const distance = Math.sqrt(Math.pow((250 - positionX), 2) + Math.pow((250 - positionY), 2));
       // Check if the distance is within ndz_radius of 250
-      if (Math.abs(250 - distance) <= ndzRadius) {
+      if (distance <= ndzRadius) {
         // Look up the violator's information in the national drone pilot registry
-        const violatorInfo = await getPilotInfo(serialNumber, Math.abs(250 - distance));
-
+        const violatorInfo = await getPilotInfo(serialNumber, distance, positionX, positionY);
+        // check that info was found
+        if (violatorInfo.name === 'Forbidden' || violatorInfo.name === 'Not Found') {
+          continue;
+        }
         // Add the violator's information to the list of violators
         violators.push(violatorInfo);
       }
     }
-
+    // update json file with new data
+    saveViolators(violators);
     res.send(violators);
   } catch (error) {
     let message;
@@ -43,7 +66,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
-async function getPilotInfo(serialNumber: String, distance: Number) {
+async function getPilotInfo(serialNumber: string, distance: number, positionX: number, positionY: number) {
   // Make an HTTP request to the drone pilot API
   const response = await fetch(
     `https://assignments.reaktor.com/birdnest/pilots/${serialNumber}`
@@ -58,13 +81,13 @@ async function getPilotInfo(serialNumber: String, distance: Number) {
 
   // Extract the pilot's information from the API response
   const data = await response.json();
-  const name = `${data.firstName} ${data.lastName}`;
-  const email = data.email;
-  const phone = data.phoneNumber;
+  const name: string = `${data.firstName} ${data.lastName}`;
+  const email: string = data.email;
+  const phone: string = data.phoneNumber;
   
 
   // get current time and set to last seen
-  const lastSeen = Math.round((new Date()).getTime() / 1000);
+  const lastSeen: number = Math.round((new Date()).getTime() / 1000);
 
   // Return the pilot's information as a dictionary
   return {
@@ -73,6 +96,8 @@ async function getPilotInfo(serialNumber: String, distance: Number) {
     phone,
     lastSeen,
     distance,
-    serialNumber
+    serialNumber,
+    positionX,
+    positionY,
   };
 }
