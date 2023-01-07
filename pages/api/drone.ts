@@ -4,6 +4,11 @@ import fs from 'fs';
 
 const saveViolators = (violators: any) => {
   // update the file isntead of overwriting but remove old duplicates
+  // create file if it doesn't exist
+  if (!fs.existsSync('/tmp/violators.json')) {
+    fs.writeFileSync('/tmp/violators.json', JSON.stringify([]));
+  }
+  // read file
   const data = fs.readFileSync('/tmp/violators.json', 'utf8');
   const json = JSON.parse(data);
   // if duplicate exists, replace it with new data
@@ -18,7 +23,7 @@ const saveViolators = (violators: any) => {
   // add new data to the file
   json.push(...violators);
   // write to file
-  fs.writeFileSync('violators.json', JSON.stringify(json));
+  fs.writeFileSync('/tmp/violators.json', JSON.stringify(json));
 };
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
