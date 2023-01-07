@@ -22,3 +22,6 @@ The app will be running at http://localhost:3000.
 ## API Endpoints
 
 - `/api/drone`: Fetches the violators informations from external APIs.
+
+## Limitations
+The persistent storage for the violator information does not work on the hosted version of the website most of the time. This is because the website is hosted on Vercel, which does not offer persistent storage. In this case, a file was used for storage instead of a database in order to save time. Ideally, a database should be used for persistent storage in a production environment.
