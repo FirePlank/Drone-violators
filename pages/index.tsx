@@ -1,8 +1,9 @@
-import type { NextPage } from 'next'
-import Head from 'next/head'
+import type { NextPage } from 'next';
+import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import fs from 'fs';
 
+// Violator interface
 interface Violator {
   serialNumber: string,
   name: string,
@@ -14,6 +15,7 @@ interface Violator {
   positionY: number,
 }
 
+// Function to load violators from a file
 const loadViolators = (): Violator[] => {
   try {
     const data = fs.readFileSync('/tmp/violators.json');
@@ -23,15 +25,21 @@ const loadViolators = (): Violator[] => {
   }
 };
 
+// Function to save violators to a file
 const saveViolators = (violators: any) => {
   fs.writeFileSync('/tmp/violators.json', JSON.stringify(violators));
 };
 
-const Home: NextPage<{ loaded: Violator[] }> = ({ loaded }) => {
-  const [violators, setViolators] = useState<Violator[]>(loaded);
-  const [nestPosition, setNestPosition] = useState({ x: 250, y: 250 });
-  const [hoveredViolator, setHoveredViolator] = useState<Violator>();
 
+const Home: NextPage<{ loadedViolators: Violator[] }> = ({ loadedViolators }) => {
+  // State for the list of violators
+  const [violators, setViolators] = useState<Violator[]>(loadedViolators)
+  // State for the hovered violator
+  const [hoveredViolator, setHoveredViolator] = useState<Violator>();
+  // nest position coordinates
+  const nestPosition = {x: 250, y: 250};
+
+  // Function to scale coordinates
   /**
  * width: integer, width of image in px
  * height: integer, height of image in px;
@@ -39,16 +47,15 @@ const Home: NextPage<{ loaded: Violator[] }> = ({ loaded }) => {
  * y: integer, vertical distance from top
  * scale: float, scale factor (1,5 = 150%)
  */
-  const scaleCoordinates = (width: number, height: number, x: number, y: number, scale: number) =>{
-    const centerX = width/2;
-    const centerY = height/2;
+  const scaleCoordinates = (width: number, height: number, x: number, y: number, scale: number) => {
+    const centerX = width / 2;
+    const centerY = height / 2;
     const relX = x - centerX;
     const relY = y - centerY;
     const scaledX = relX * scale;
     const scaledY = relY * scale;
-    return {x: scaledX + centerX, y: scaledY + centerY};
-    
-  }
+    return { x: scaledX + centerX, y: scaledY + centerY };
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,13 +63,13 @@ const Home: NextPage<{ loaded: Violator[] }> = ({ loaded }) => {
       const data = await res.json();
       // add new violators
       setViolators((violators) => {
-        // check if violator is already in the list and if so update the last seen time and distance from nest if its lower
+        // check if violator is already in the list and if so update the last seen time
         try {
           const newViolators = data.filter((violator: { serialNumber: string, lastSeen: number, distance: number, positionX: number, positionY: number }) => {
             const existingViolator = violators.find((v: { serialNumber: string }) => v.serialNumber === violator.serialNumber);
             if (existingViolator) {
               existingViolator.lastSeen = violator.lastSeen;
-              // if the distance is lower than the existing one, update it
+              // if the distance is lower than the existing one, update it and the position
               if (violator.distance < existingViolator.distance) {
                 existingViolator.distance = violator.distance;
                 existingViolator.positionX = violator.positionX;
@@ -123,6 +130,8 @@ const Home: NextPage<{ loaded: Violator[] }> = ({ loaded }) => {
                 onMouseEnter={() => setHoveredViolator({ serialNumber: 'nest', name: 'The Bird Nest', lastSeen: 0, distance: 0, positionX: nestPosition.x+18, positionY: nestPosition.y+50 })}
                 onMouseLeave={() => setHoveredViolator(undefined)}
             />
+
+            {/* Render red circles for each violator based on their coordinates */}
             {violators.map((violator) => (
               
               <div
@@ -136,6 +145,8 @@ const Home: NextPage<{ loaded: Violator[] }> = ({ loaded }) => {
                 onMouseLeave={() => setHoveredViolator(undefined)}
               />
             ))}
+
+            {/* Popup with the violator details */}
             {hoveredViolator && (
               <div
                 className="absolute bg-white p-4 rounded-lg shadow-md min-w-max"
@@ -162,7 +173,6 @@ const Home: NextPage<{ loaded: Violator[] }> = ({ loaded }) => {
                 )}
               </div>
             )}
-          
           </div>
         </div>
       </main>
@@ -170,19 +180,20 @@ const Home: NextPage<{ loaded: Violator[] }> = ({ loaded }) => {
   )
 }
 
+// Get the intial violators from the file system
 export const getServerSideProps = async ({ res }: any) => {
-  // load the violators from the file system. Ideally this information should be stored in a database.
+  // load the violators from the file system
   const violators = loadViolators();
   // remove violators that have not been seen in the last 10 minutes
   const filteredViolators = violators.filter((violator: { lastSeen: number; }) => (new Date()).getTime() / 1000 - violator.lastSeen < 600);
-  // save the violators to the file system
+  // save the filtered violators back to the file system
   saveViolators(filteredViolators);
   
   return {
     props: {
-      loaded: filteredViolators,
+      loadedViolators: filteredViolators,
     },
   };
 };
 
-export default Home
+export default Home;

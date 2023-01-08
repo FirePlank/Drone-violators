@@ -26,7 +26,7 @@ const saveViolators = (violators: any) => {
   fs.writeFileSync('/tmp/violators.json', JSON.stringify(json));
 };
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+export default async (_req: NextApiRequest, res: NextApiResponse) => {
   const ndzRadius = 100;
 
   try {
