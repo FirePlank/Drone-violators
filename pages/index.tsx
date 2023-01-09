@@ -1,7 +1,7 @@
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
-import fs from 'fs';
+import clientPromise from '../lib/mongodb';
 
 // Violator interface
 interface Violator {
@@ -14,22 +14,6 @@ interface Violator {
   positionX: number,
   positionY: number,
 }
-
-// Function to load violators from a file
-const loadViolators = (): Violator[] => {
-  try {
-    const data = fs.readFileSync('/tmp/violators.json');
-    return JSON.parse(data.toString());
-  } catch (err) {
-    return [];
-  }
-};
-
-// Function to save violators to a file
-const saveViolators = (violators: any) => {
-  fs.writeFileSync('/tmp/violators.json', JSON.stringify(violators));
-};
-
 
 const Home: NextPage<{ loadedViolators: Violator[] }> = ({ loadedViolators }) => {
   // State for the list of violators
@@ -181,13 +165,25 @@ const Home: NextPage<{ loadedViolators: Violator[] }> = ({ loadedViolators }) =>
 }
 
 // Get the intial violators from the file system
-export const getServerSideProps = async ({ res }: any) => {
-  // load the violators from the file system
-  const violators = loadViolators();
+export const getServerSideProps = async ({ _res }: any) => {
+
+  // connect to the database
+  const client = await clientPromise;
+  const db = client.db("violators");
+  const collection = db.collection('information');
+
+  // get the violators from the database and exclude the _id field
+  const violators = await collection.find({}, { projection: { _id: 0 } }).toArray();
+
   // remove violators that have not been seen in the last 10 minutes
-  const filteredViolators = violators.filter((violator: { lastSeen: number; }) => (new Date()).getTime() / 1000 - violator.lastSeen < 600);
-  // save the filtered violators back to the file system
-  saveViolators(filteredViolators);
+  const filteredViolators = violators.filter((violator) => (new Date()).getTime() / 1000 - violator.lastSeen < 600);
+  // save the filtered violators back to the database if any have been removed
+  if (filteredViolators.length !== violators.length) {
+    await collection.deleteMany({});
+    if (filteredViolators.length > 0) {
+      await collection.insertMany(filteredViolators);
+    }
+  }
   
   return {
     props: {

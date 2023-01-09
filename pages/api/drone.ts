@@ -1,29 +1,29 @@
 import { XMLParser } from 'fast-xml-parser';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import fs from 'fs';
+import clientPromise from '../../lib/mongodb';
 
-const saveViolators = (violators: any) => {
-  // update the file isntead of overwriting but remove old duplicates
-  // create file if it doesn't exist
-  if (!fs.existsSync('/tmp/violators.json')) {
-    fs.writeFileSync('/tmp/violators.json', JSON.stringify([]));
-  }
-  // read file
-  const data = fs.readFileSync('/tmp/violators.json', 'utf8');
-  const json = JSON.parse(data);
-  // if duplicate exists, replace it with new data
-  for (let i = 0; i < json.length; i++) {
-    for (let j = 0; j < violators.length; j++) {
-      if (json[i].serialNumber === violators[j].serialNumber) {
-        json[i] = violators[j];
-        break;
+const saveViolators = async (violators: any) => {
+  // update the database
+  const client = await clientPromise;
+  const db = client.db('violators');
+  const collection = db.collection('information');
+
+  // fetch old data from collection
+  const oldViolators = await collection.find({}, { projection: { _id: 0 } }).toArray();
+
+  // if duplicate exists, replace it with new data unless distance is higher, then only update last seen
+  for (const violator of violators) {
+    const duplicate = oldViolators.find((oldViolator) => oldViolator.serialNumber === violator.serialNumber);
+    if (duplicate) {
+      if (duplicate.distance > violator.distance) {
+        await collection.replaceOne({ serialNumber: violator.serialNumber }, violator, { upsert: true });
+      } else {
+        await collection.updateOne({ serialNumber: violator.serialNumber }, { $set: { lastSeen: violator.lastSeen } });
       }
+    } else {
+      await collection.insertOne(violator);
     }
-  }
-  // add new data to the file
-  json.push(...violators);
-  // write to file
-  fs.writeFileSync('/tmp/violators.json', JSON.stringify(json));
+  }  
 };
 
 export default async (_req: NextApiRequest, res: NextApiResponse) => {

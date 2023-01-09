@@ -13,7 +13,9 @@ This web application is an assignment project for a job application that is mean
 
 &emsp;&emsp;`npm install`
 
-3. Run the development server:
+3. Rename the `.env.local.example` file to `.env.local` and add the MongoDB URL to the `MONGODB_URI` variable.
+
+4. Run the development server:
 `npm run dev`
 
 
@@ -24,4 +26,4 @@ The app will be running at http://localhost:3000.
 - `/api/drone`: Fetches the violators informations from external APIs.
 
 ## Limitations
-The persistent storage for the violator information does not work on the hosted version of the website most of the time. This is because the website is hosted on Vercel, which does not offer persistent storage. In this case, a file was used for storage instead of a database in order to save time and to keep the hosting costs free. Ideally, a database should be used for persistent storage in a production environment.
+The app may not be updated with the latest violator information if the website has not been visited in awhile. This is because the website is hosted for free and does not have server tasks running every other second to update the violators manually without visitors. In a production environment, server tasks can be used to keep the information up to date.
