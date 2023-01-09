@@ -97,7 +97,8 @@ const Home: NextPage<{ loadedViolators: Violator[] }> = ({ loadedViolators }) =>
             height: '520px',
             width: '520px',
             backgroundColor: "#8bc34a",
-            left: '33%'
+            marginLeft: 'auto',
+            marginRight: 'auto',
           }}>
             <div style={{
                   top: `${nestPosition.y}px`,
